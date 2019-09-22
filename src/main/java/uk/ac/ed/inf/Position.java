@@ -14,8 +14,8 @@ public class Position {
     }
 
     public Position nextPosition(Direction direction) {
-        this.latitude += r * cos(toRadians(direction.angle));
-        this.longitude += r * sin(toRadians(direction.angle));
+        this.latitude += r * sin(toRadians(direction.angle));
+        this.longitude += r * cos(toRadians(direction.angle));
         return new Position(latitude, longitude);
     }
 
