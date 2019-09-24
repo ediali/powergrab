@@ -1,30 +1,66 @@
 package uk.ac.ed.inf;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.*;
 import java.net.URL;
-import java.util.Calendar;
-import java.util.Date;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
 
-public class App 
-{
-    public static void main( String[] args ) {
-        Date date= new Date();
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        try {
-            String temp = String.format("http://homepages.inf.ed.ac.uk/stg/powergrab/%d/%d/%d/powergrabmap.geojson", cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DATE));
-            URL url = new URL("http://homepages.inf.ed.ac.uk/stg/powergrab/2019/09/22/powergrabmap.geojson");
-            BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
-            StringBuilder str = new StringBuilder();
-            while (null != (br.readLine())) {
-                str.append(br.readLine());
-                str.append('\n');
-            }
-            System.out.println(str);
-        } catch (Exception ex) {
-            ex.printStackTrace();
+public class App {
+
+    public static ArrayList<Feature> features = new ArrayList<Feature>();
+
+    private static String readAll(Reader rd) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        int cp;
+        while ((cp = rd.read()) != -1) {
+            sb.append((char) cp);
         }
+        return sb.toString();
+    }
 
+    public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
+        InputStream is = new URL(url).openStream();
+        try {
+            BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+            String jsonText = readAll(rd);
+            JSONObject json = new JSONObject(jsonText);
+            return json;
+        } finally {
+            is.close();
+        }
+    }
+
+    public static void main( String[] args ) throws IOException {
+        String day = args[0];
+        String month = args[1];
+        String year = args[2];
+
+        String url = String.format("http://homepages.inf.ed.ac.uk/stg/powergrab/%s/%s/%s/powergrabmap.geojson", year, month, day);
+        JSONObject json = readJsonFromUrl(url);
+
+        JSONArray allFeatures = json.getJSONArray("features");
+
+        for(Object feature : allFeatures){
+            JSONObject f = new JSONObject(feature.toString());
+            JSONObject geometry = f.getJSONObject("geometry");
+            JSONArray coords = geometry.getJSONArray("coordinates");
+            JSONObject properties = f.getJSONObject("properties");
+            String id = properties.get("id").toString();
+            double coins = Double.parseDouble(properties.get("coins").toString());
+            double power = Double.parseDouble(properties.get("power").toString());
+            String symbol = properties.get("marker-symbol").toString();
+            String color = properties.get("marker-color").toString();
+
+            Feature finalFeature = new Feature(id, coins, power, symbol, color, coords.getDouble(1), coords.getDouble(0));
+            features.add(finalFeature);
+//            System.out.println(finalFeature.toString());
+        }
+        Stateless statelessDrone = new Stateless(new Position(55.94503801615842, -3.1920482197463103));
+        statelessDrone.getFeaturesInRange();
     }
 }
+

@@ -1,6 +1,7 @@
 package uk.ac.ed.inf;
 
-import static java.lang.Math.*;
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
 
 public class Position {
 
@@ -14,14 +15,15 @@ public class Position {
     }
 
     public Position nextPosition(Direction direction) {
-        this.latitude += r * sin(toRadians(direction.angle));
-        this.longitude += r * cos(toRadians(direction.angle));
-        return new Position(latitude, longitude);
+        double angle = Math.toRadians(direction.ordinal()*22.5);
+        double new_lat = this.latitude + r * sin(angle);
+        double new_long = this.longitude + r * cos(angle);
+        return new Position(new_lat, new_long);
     }
 
 
     public boolean inPlayArea() {
-        return (latitude <= 55.946233 && latitude >= 55.942617) && (longitude >= -3.192473 && longitude <= -3.184319);
+        return (latitude < 55.946233 && latitude > 55.942617) && (longitude > -3.192473 && longitude < -3.184319);
     }
 
 }
