@@ -1,4 +1,4 @@
-package uk.ac.ed.inf;
+package uk.ac.ed.inf.powergrab;
 
 import static java.lang.Math.cos;
 import static java.lang.Math.sin;

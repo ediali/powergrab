@@ -1,4 +1,4 @@
-package uk.ac.ed.inf;
+package uk.ac.ed.inf.powergrab;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -57,10 +57,13 @@ public class App {
 
             Feature finalFeature = new Feature(id, coins, power, symbol, color, coords.getDouble(1), coords.getDouble(0));
             features.add(finalFeature);
-//            System.out.println(finalFeature.toString());
         }
-        Stateless statelessDrone = new Stateless(new Position(55.94503801615842, -3.1920482197463103));
-        statelessDrone.getFeaturesInRange();
+        Stateless statelessDrone = new Stateless(new Position(55.9448247352526, -3.190112515804394));
+        statelessDrone.getNextMove();
+        statelessDrone.updateCoinsAndPower();
+        System.out.println(statelessDrone.coins);
+        System.out.println(statelessDrone.power);
+
     }
 }
 
