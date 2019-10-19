@@ -7,30 +7,44 @@ public class Stateless {
     public double coins = 0.0;
     public double power = 250.0;
     public Position currentPosition;
-    private ArrayList<Feature> featuresInMoveRange = new ArrayList<Feature>();
-    private ArrayList<Feature> featuresInRange = new ArrayList<Feature>();
+    private Random rand = new Random();
 
-    public Stateless(Position initialPosition){
+
+    public Stateless(Position initialPosition, long seed){
         this.currentPosition = initialPosition;
+        rand.setSeed(seed);
     }
 
-    public void getFeaturesInRange(){
+    public ArrayList<Feature> getFeaturesInMoveRange(Position position){
+        ArrayList<Feature> featuresInMoveRange = new ArrayList<Feature>();
         for (Feature feature : App.features) {
-            double distanceFromFeature = findDistance(feature.latitude, feature.longitude, currentPosition.latitude, currentPosition.longitude);
-            if (distanceFromFeature > 0.00025 & distanceFromFeature <= 0.00030){
-                this.featuresInMoveRange.add(feature);
+            double distanceFromFeature = findDistance(feature.latitude, feature.longitude, position.latitude, position.longitude);
+            if (distanceFromFeature > 0.00025 & distanceFromFeature <= 0.00030) {
+                featuresInMoveRange.add(feature);
 
             }
-            else if(distanceFromFeature <= 0.00025){
-                this.featuresInRange.add(feature);
-            }
-
         }
+        return featuresInMoveRange;
+    }
+
+    public ArrayList<Feature> getFeaturesInRange(Position position){
+        ArrayList<Feature> featuresInRange = new ArrayList<Feature>();
+        for (Feature feature : App.features) {
+            double distanceFromFeature = findDistance(feature.latitude, feature.longitude, position.latitude, position.longitude);
+            if(distanceFromFeature <= 0.00025){
+                featuresInRange.add(feature);
+            }
+        }
+        return featuresInRange;
     }
 
 
     public void updateCoinsAndPower(){
-        getFeaturesInRange();
+        ArrayList<Feature> featuresInRange = getFeaturesInRange(currentPosition);
+        if (featuresInRange.size() == 0){
+            power -= 1.25;
+            return;
+        }
         Feature minFeature = featuresInRange.get(0);
         double min = Double.MAX_VALUE;
         for (Feature feature : featuresInRange){
@@ -42,24 +56,62 @@ public class Stateless {
         }
         coins += minFeature.getCoins();
         power += minFeature.getPower() - 1.25;
-        featuresInRange.get(featuresInRange.indexOf(minFeature)).coins = 0;
-        featuresInRange.get(featuresInRange.indexOf(minFeature)).power = 0;
+        App.features.get(App.features.indexOf(minFeature)).coins = 0;
+        App.features.get(App.features.indexOf(minFeature)).power = 0;
+    }
+
+
+    public boolean nearNegativeOrEmpty(Position position){
+        ArrayList<Feature> featuresInRange = getFeaturesInRange(position);
+        if (featuresInRange.size() == 0){
+            return false;
+        }
+        double min = Double.MAX_VALUE;
+        Feature minFeature = featuresInRange.get(0);
+        for (Feature feature : featuresInRange){
+            double distance = findDistance(feature.latitude, feature.longitude, currentPosition.latitude, currentPosition.longitude);
+            if (distance < min){
+                minFeature = feature;
+                min = distance;
+            }
+        }
+
+        return minFeature.getPower() <= 0;
+
     }
 
     public Direction getNextMove(){
-        getFeaturesInRange();
+        ArrayList<Feature> featuresInMoveRange = getFeaturesInMoveRange(currentPosition);
+
         for(Feature feature : featuresInMoveRange){
             if (feature.getSymbol().equals("lighthouse") && feature.getPower() > 0) {
                 for(Direction  d: Direction.values()){
-                    Position temp = currentPosition.nextPosition(d);
-                    if (findDistance(temp.latitude, temp.longitude, feature.latitude, feature.longitude) <= 0.00025){
-                        this.currentPosition = temp;
+                    Position nextPosition = currentPosition.nextPosition(d);
+                    if (!nextPosition.inPlayArea()){
+                        continue;
+                    }
+                    if (!nearNegativeOrEmpty(nextPosition)){
+                        this.currentPosition = nextPosition;
                         return d;
                     }
                 }
             }
         }
-        return Direction.values()[new Random().nextInt(Direction.values().length)];
+        Direction d = Direction.values()[rand.nextInt(Direction.values().length)];
+        Position nextPosition = currentPosition.nextPosition(d);
+        while(!nextPosition.inPlayArea() || nearNegativeOrEmpty(nextPosition)){
+            d = Direction.values()[rand.nextInt(Direction.values().length)];
+            nextPosition = currentPosition.nextPosition(d);
+            if (!nextPosition.inPlayArea()){
+                continue;
+            }
+            if (!nearNegativeOrEmpty(nextPosition)){
+                this.currentPosition = nextPosition;
+                return d;
+            }
+        }
+        this.currentPosition = nextPosition;
+        return d;
     }
 
     private double findDistance(double latitude1, double longitude1, double latitude2, double longitude2){

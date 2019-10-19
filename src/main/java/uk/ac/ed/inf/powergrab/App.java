@@ -56,13 +56,20 @@ public class App {
             String color = properties.get("marker-color").toString();
 
             Feature finalFeature = new Feature(id, coins, power, symbol, color, coords.getDouble(1), coords.getDouble(0));
+//            System.out.println(finalFeature.toString());
             features.add(finalFeature);
         }
-        Stateless statelessDrone = new Stateless(new Position(55.9448247352526, -3.190112515804394));
-        statelessDrone.getNextMove();
-        statelessDrone.updateCoinsAndPower();
+
+        Stateless statelessDrone = new Stateless(new Position(55.9448247352526, -3.190112515804394), Long.parseLong(args[3]));
+        System.out.println(statelessDrone.currentPosition.toString());
+        int moves = 0;
+        while (statelessDrone.power > 0 && moves <= 250){
+            statelessDrone.getNextMove();
+            statelessDrone.updateCoinsAndPower();
+            System.out.println(statelessDrone.currentPosition.toString());
+            moves ++;
+        }
         System.out.println(statelessDrone.coins);
-        System.out.println(statelessDrone.power);
 
     }
 }
