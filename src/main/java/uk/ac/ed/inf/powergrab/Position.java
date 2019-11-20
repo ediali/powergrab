@@ -26,9 +26,12 @@ public class Position {
         return (latitude < 55.946233 && latitude > 55.942617) && (longitude > -3.192473 && longitude < -3.184319);
     }
 
-    @Override
-    public String toString(){
-        return "["+String.valueOf(longitude) + ", " + String.valueOf(latitude)+"], ";
+
+    public double[] getCoords(){
+        double [] out = new double[2];
+        out[0] = longitude;
+        out[1] = latitude;
+        return out;
     }
 
 }
