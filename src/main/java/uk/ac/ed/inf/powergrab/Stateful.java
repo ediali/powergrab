@@ -1,9 +1,10 @@
 package uk.ac.ed.inf.powergrab;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
+/**
+ * Stateful drone extension of the abstract class Drone. This class has unlimited look ahead and can have memory.
+ */
 public class Stateful extends Drone {
     private Feature currentFeature = null;
     private int moves = 0;
@@ -11,11 +12,16 @@ public class Stateful extends Drone {
         super.currentPosition = initialPosition;
     }
 
-    private Feature getClosestFeature(Position position, List<Feature> features){
+    /**
+     * Returns the closest feature given a certain position.
+     * @param position Position attribute
+     * @return Feature
+     */
+    private Feature getClosestFeature(Position position){
         double minDistance = Double.MAX_VALUE;
         Feature minFeature = null;
-        for(Feature feature: features){
-            double distance = findDistance(position.latitude, position.longitude, feature.latitude, feature.longitude);
+        for(Feature feature: App.features){
+            double distance = findDistance(feature.getPosition(), position);
             if (distance < minDistance && feature.getPower() > 0){
                 minDistance = distance;
                 minFeature = feature;
@@ -24,17 +30,19 @@ public class Stateful extends Drone {
         return minFeature;
     }
 
-    @Override
+
     public Direction getMove(){
         Feature closest;
+        // Checks if there is a feature we are going towards
         if (currentFeature != null){
             closest = currentFeature;
         }
+        // If null, it means that we have just collected the previous currentFeature
         else{
-            closest = getClosestFeature(currentPosition, App.features);
+            closest = getClosestFeature(currentPosition);
             currentFeature = closest;
         }
-
+        // If the drone gets stuck in a barrier of reds, it will pick a positive feature at random.=
         if (moves >= 20){
             Random random = new Random();
             Feature randomFeature = App.features.get(random.nextInt(App.features.size()));
@@ -51,7 +59,7 @@ public class Stateful extends Drone {
         // If all positive stations have been collected
         if (closest == null){
             for (Direction d: Direction.values()){
-                if(!nearNegative(currentPosition.nextPosition(d)) && currentPosition.nextPosition(d).inPlayArea()){
+                if(nearNegative(currentPosition.nextPosition(d)) && currentPosition.nextPosition(d).inPlayArea()){
                     currentPosition = currentPosition.nextPosition(d);
                     return d;
                 }
@@ -59,11 +67,12 @@ public class Stateful extends Drone {
         }
         double shortest_dist = Double.MAX_VALUE;
         Direction shortest_dir = null;
+        // Finds the direction which puts the drone closest to the selected feature
         for (Direction d : Direction.values()){
             Position nextPosition = currentPosition.nextPosition(d);
-            double dist = findDistance(nextPosition.latitude, nextPosition.longitude, closest.latitude, closest.longitude);
-            if (dist < shortest_dist && !nearNegative(nextPosition) && nextPosition.inPlayArea()){
-                double distanceFromClosest = findDistance(closest.latitude, closest.longitude, nextPosition.latitude, nextPosition.longitude);
+            double dist = findDistance(nextPosition, closest.getPosition());
+            if (dist < shortest_dist && nearNegative(nextPosition) && nextPosition.inPlayArea()){
+                double distanceFromClosest = findDistance(closest.getPosition(), nextPosition);
                 if (distanceFromClosest <= 0.00025 && findLandingFeature(nextPosition) == closest){
                     currentFeature = null;
                     shortest_dir = d;
@@ -76,28 +85,10 @@ public class Stateful extends Drone {
                 }
             }
         }
+
         moves ++;
         currentPosition = currentPosition.nextPosition(shortest_dir);
         return shortest_dir;
     }
-
-
-    private Feature findPositiveLandingFeature(Position position){
-        ArrayList<Feature> featuresInRange = getFeaturesInRange(position);
-        if (featuresInRange.size() == 0){
-            return null;
-        }
-        double min = Double.MAX_VALUE;
-        Feature minFeature = null;
-        for (Feature feature : featuresInRange){
-            double distance = findDistance(feature.latitude, feature.longitude, position.latitude, position.longitude);
-            if (distance < min && feature.coins > 0){
-                minFeature = feature;
-                min = distance;
-            }
-        }
-
-        return minFeature;
-    }
-
+    
 }

@@ -11,10 +11,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * The class which reads the json files and runs either of the two drones and writes the output in txt and json format.
+ */
 public class App {
 
-    public static ArrayList<Feature> features = new ArrayList<Feature>();
+    public static ArrayList<Feature> features = new ArrayList<>();
 
+    /**
+     * Reads the json text from the buffered reader
+     * @param rd Reader
+     * @return String
+     * @throws IOException exception
+     */
     private static String readAll(Reader rd) throws IOException {
         StringBuilder sb = new StringBuilder();
         int cp;
@@ -25,17 +34,22 @@ public class App {
     }
 
     private static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
-        InputStream is = new URL(url).openStream();
-        try {
+        try (InputStream is = new URL(url).openStream()) {
             BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
             String jsonText = readAll(rd);
             JSONObject json = new JSONObject(jsonText);
             return json;
-        } finally {
-            is.close();
         }
     }
 
+    /**
+     * Returns a json Object containing all the features.
+     * @param year The year of the map
+     * @param month The month of the map
+     * @param day The day of the map
+     * @return JSON Object
+     * @throws IOException exception
+     */
     private static JSONObject readFeatures(String year, String month, String day) throws IOException {
         String url = String.format("http://homepages.inf.ed.ac.uk/stg/powergrab/%s/%s/%s/powergrabmap.geojson", year, month, day);
         System.out.println(url);
@@ -59,26 +73,35 @@ public class App {
         return json;
     }
 
+    /**
+     * Writes a json file containing a linestring.
+     * @param droneCoords coordinates of the drone
+     * @param json json object
+     * @return String
+     */
     private static String writeJson(List<double[]> droneCoords, JSONObject json){
         JSONObject linestringJSON = new JSONObject();
         linestringJSON.put("properties", new HashMap<String, Object>());
         linestringJSON.put("type", "Feature");
-        HashMap<String, Object> temp = new HashMap<String, Object>();
+        HashMap<String, Object> temp = new HashMap<>();
         temp.put("coordinates", droneCoords);
         temp.put("type", "LineString");
         linestringJSON.put("geometry", temp);
         json.getJSONArray("features").put(linestringJSON);
         return json.toString();
-//        System.out.println(json.toString());
     }
 
+    /**
+     *Initialize file writers and run the drone given the command line arguments. Then save all the drone moves to the
+     * appropriate files.
+     * @param args command line arguments
+     * @throws IOException exception
+     */
     public static void main( String[] args ) throws IOException {
-        List<double[]> statelessCoords = new ArrayList<double[]>();
-        List<double[]> statefulCoords = new ArrayList<double[]>();
-        JSONObject json = readFeatures(args[2], args[1],args[0]);
-//        Drone drone = new Stateless(new Position(55.944425, -3.188396), Long.parseLong(args[3]));
-        String droneType = args[6];
+        List<double[]> droneCoords = new ArrayList<>();
 
+        JSONObject json = readFeatures(args[2], args[1],args[0]);
+        String droneType = args[6];
 
         FileWriter txtFile = new FileWriter(String.format("%s-%s-%s-%s.txt",droneType, args[0], args[1],args[2]));
         PrintWriter txtPrinter = new PrintWriter(txtFile);
@@ -86,34 +109,45 @@ public class App {
         FileWriter geoFile = new FileWriter(String.format("%s-%s-%s-%s.geojson",droneType, args[0], args[1],args[2]));
         PrintWriter geoPrinter = new PrintWriter(geoFile);
 
-        long seed =  Long.parseLong(args[5]);
-        Drone drone = new Stateful(new Position(Double.parseDouble(args[3]), Double.parseDouble(args[4])));
+        Drone drone = null;
+
+        switch (droneType){
+            case "stateless":
+                drone = new Stateless(new Position(Double.parseDouble(args[3]), Double.parseDouble(args[4])), Long.parseLong(args[5]));
+                break;
+            case "stateful":
+                drone = new Stateful(new Position(Double.parseDouble(args[3]), Double.parseDouble(args[4])));
+                break;
+        }
+
         int moves = 0;
-        statefulCoords.add(drone.currentPosition.getCoords());
+        assert drone != null;
+        droneCoords.add(drone.currentPosition.getCoords());
+
         while (drone.power > 0 && moves < 250) {
-            double currLatitude = drone.currentPosition.latitude;
-            double currLongitude = drone.currentPosition.longitude;
+            double currLatitude = drone.currentPosition.getLatitude();
+            double currLongitude = drone.currentPosition.getLongitude();
             Direction d = drone.getMove();
             drone.updateCoinsAndPower();
             txtPrinter.printf("%f,%f,%s,%f,%f,%f,%f\n",
                     currLatitude,
                     currLongitude,
                     d.toString(),
-                    drone.currentPosition.latitude,
-                    drone.currentPosition.longitude,
+                    drone.currentPosition.getLatitude(),
+                    drone.currentPosition.getLongitude(),
                     drone.coins,
                     drone.power
                     );
-            statefulCoords.add(drone.currentPosition.getCoords());
+            droneCoords.add(drone.currentPosition.getCoords());
             moves++;
         }
 
         txtPrinter.close();
 
-        geoPrinter.print(writeJson(statefulCoords, json));
+        geoPrinter.print(writeJson(droneCoords, json));
         geoPrinter.close();
 
-        System.out.println(drone.coins);
+//        System.out.println(drone.coins);
     }
 }
 
