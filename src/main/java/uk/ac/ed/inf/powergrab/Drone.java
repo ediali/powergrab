@@ -20,7 +20,7 @@ public abstract class Drone {
      */
     private ArrayList<Feature> getFeaturesInRange(Position position){
         ArrayList<Feature> featuresInRange = new ArrayList<Feature>();
-        for (Feature feature : App.features) {
+        for (Feature feature : Utils.getFeatures()) {
             double distanceFromFeature = findDistance(feature.getPosition(), position);
             if(distanceFromFeature <= 0.00025){
                 featuresInRange.add(feature);
@@ -109,10 +109,11 @@ public abstract class Drone {
                 min = distance;
             }
         }
+        assert minFeature != null;
         coins += minFeature.getCoins();
         power += minFeature.getPower() - 1.25;
-        App.features.get(App.features.indexOf(minFeature)).setCoins(0);
-        App.features.get(App.features.indexOf(minFeature)).setPower(0);
+        Utils.getFeatures().get(Utils.getFeatures().indexOf(minFeature)).setCoins(0);
+        Utils.getFeatures().get(Utils.getFeatures().indexOf(minFeature)).setPower(0);
     }
 
     /**

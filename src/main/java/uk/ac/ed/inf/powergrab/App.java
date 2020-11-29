@@ -16,8 +16,6 @@ import java.util.List;
  */
 public class App {
 
-    public static ArrayList<Feature> features = new ArrayList<>();
-
     /**
      * Reads the json text from the buffered reader
      * @param rd Reader
@@ -37,8 +35,7 @@ public class App {
         try (InputStream is = new URL(url).openStream()) {
             BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
             String jsonText = readAll(rd);
-            JSONObject json = new JSONObject(jsonText);
-            return json;
+            return new JSONObject(jsonText);
         }
     }
 
@@ -50,7 +47,7 @@ public class App {
      * @return JSON Object
      * @throws IOException exception
      */
-    private static JSONObject readFeatures(String year, String month, String day) throws IOException {
+    public static JSONObject readFeatures(String year, String month, String day) throws IOException {
         String url = String.format("http://homepages.inf.ed.ac.uk/stg/powergrab/%s/%s/%s/powergrabmap.geojson", year, month, day);
         System.out.println(url);
         JSONObject json = readJsonFromUrl(url);
@@ -68,7 +65,7 @@ public class App {
             String color = properties.get("marker-color").toString();
 
             Feature finalFeature = new Feature(id, coins, power, symbol, color, coords.getDouble(1), coords.getDouble(0));
-            features.add(finalFeature);
+            Utils.getFeatures().add(finalFeature);
         }
         return json;
     }
@@ -147,7 +144,7 @@ public class App {
         geoPrinter.print(writeJson(droneCoords, json));
         geoPrinter.close();
 
-//        System.out.println(drone.coins);
+        System.out.println(drone.coins);
     }
 }
 

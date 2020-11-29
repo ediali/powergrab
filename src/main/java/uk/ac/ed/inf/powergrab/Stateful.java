@@ -2,9 +2,6 @@ package uk.ac.ed.inf.powergrab;
 
 import java.util.Random;
 
-/**
- * Stateful drone extension of the abstract class Drone. This class has unlimited look ahead and can have memory.
- */
 public class Stateful extends Drone {
     private Feature currentFeature = null;
     private int moves = 0;
@@ -20,7 +17,7 @@ public class Stateful extends Drone {
     private Feature getClosestFeature(Position position){
         double minDistance = Double.MAX_VALUE;
         Feature minFeature = null;
-        for(Feature feature: App.features){
+        for(Feature feature: Utils.getFeatures()){
             double distance = findDistance(feature.getPosition(), position);
             if (distance < minDistance && feature.getPower() > 0){
                 minDistance = distance;
@@ -29,7 +26,6 @@ public class Stateful extends Drone {
         }
         return minFeature;
     }
-
 
     public Direction getMove(){
         Feature closest;
@@ -43,11 +39,11 @@ public class Stateful extends Drone {
             currentFeature = closest;
         }
         // If the drone gets stuck in a barrier of reds, it will pick a positive feature at random.=
-        if (moves >= 20){
+        if (moves >= 20 && closest != null){
             Random random = new Random();
-            Feature randomFeature = App.features.get(random.nextInt(App.features.size()));
+            Feature randomFeature = Utils.getFeatures().get(random.nextInt(Utils.getFeatures().size()));
             while (randomFeature.getPower()<= 0){
-                randomFeature = App.features.get(random.nextInt(App.features.size()));
+                randomFeature = Utils.getFeatures().get(random.nextInt(Utils.getFeatures().size()));
             }
             currentFeature = randomFeature;
             if (randomFeature.getId().equals(closest.getId())){
@@ -65,27 +61,39 @@ public class Stateful extends Drone {
                 }
             }
         }
-        double shortest_dist = Double.MAX_VALUE;
+        assert closest != null;
+        double shortest_dist = findDistance(currentPosition, closest.getPosition());
         Direction shortest_dir = null;
         // Finds the direction which puts the drone closest to the selected feature
         for (Direction d : Direction.values()){
             Position nextPosition = currentPosition.nextPosition(d);
             double dist = findDistance(nextPosition, closest.getPosition());
             if (dist < shortest_dist && nearNegative(nextPosition) && nextPosition.inPlayArea()){
-                double distanceFromClosest = findDistance(closest.getPosition(), nextPosition);
-                if (distanceFromClosest <= 0.00025 && findLandingFeature(nextPosition) == closest){
+                if (dist <= 0.00025 && findLandingFeature(nextPosition) == closest){
                     currentFeature = null;
                     shortest_dir = d;
                     shortest_dist = dist;
                     moves = 0;
                 }
-                else if (distanceFromClosest > 0.00025){
+                else if (dist > 0.00025){
                     shortest_dir = d;
                     shortest_dist = dist;
                 }
             }
         }
-
+        if(shortest_dir == null){
+            Direction d = Direction.values()[new Random().nextInt(Direction.values().length)];
+            Position nextPosition = currentPosition.nextPosition(d);
+            shortest_dir = d;
+            while(!nextPosition.inPlayArea() || !nearNegative(nextPosition)){
+                d = Direction.values()[new Random().nextInt(Direction.values().length)];
+                nextPosition = currentPosition.nextPosition(d);
+                if (nearNegative(nextPosition) && nextPosition.inPlayArea()){
+                    shortest_dir = d;
+                    break;
+                }
+            }
+        }
         moves ++;
         currentPosition = currentPosition.nextPosition(shortest_dir);
         return shortest_dir;
