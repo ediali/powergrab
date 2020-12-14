@@ -1,14 +1,16 @@
 package uk.ac.ed.inf.powergrab;
 
+/**
+ * Feature class which holds the required attributes for a station.
+ */
 public class Feature {
 
-    public final String id;
-    public double coins;
-    public double power;
-    public String symbol;
-    public String color;
-    public double latitude;
-    public double longitude;
+    private final String id;
+    private double coins;
+    private double power;
+    private final String symbol;
+    private final String color;
+    private final Position position;
 
     public Feature(String id, double coins, double power, String symbol, String color, double latitude, double longitude){
         this.id = id;
@@ -16,8 +18,7 @@ public class Feature {
         this.power = power;
         this.symbol = symbol;
         this.color = color;
-        this.latitude = latitude;
-        this.longitude = longitude;
+        this.position = new Position(latitude, longitude);
     }
 
     public String getId() {
@@ -44,33 +45,11 @@ public class Feature {
         return symbol;
     }
 
-    public void setSymbol(String symbol) {
-        this.symbol = symbol;
-    }
-
     public String getColor() {
         return color;
     }
 
-    public void setColor(String color) {
-        this.color = color;
-    }
-
-    public double getLatitude() {
-        return latitude;
-    }
-
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
-    }
-
-    public double getLongitude() {
-        return longitude;
-    }
-
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
-    }
+    public Position getPosition() {return this.position;}
 
     @Override
     public String toString(){
@@ -79,8 +58,8 @@ public class Feature {
                 "\npower: " + power +
                 "\nsymbol: " + symbol +
                 "\ncolor: " + color +
-                "\ncoords: " + latitude +
-                ", " + longitude;
+                "\ncoords: " + position.getLatitude() +
+                ", " + position.getLongitude();
     }
 
 }
